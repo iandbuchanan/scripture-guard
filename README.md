@@ -11,6 +11,12 @@ reproduce it.
 Prompts can ask for that. This library checks it. It is small, has no dependencies, and works
 with any model and any Bible source.
 
+## Status
+
+**Prototype.** scripture-guard was built for a hackathon as a minimal viable product: the
+smallest guard that shows the pattern working end to end. The API may change, and how well it
+works on real model output hasn't been measured yet (see [Testing](#testing)).
+
 ## Install
 
 ```bash
@@ -86,6 +92,43 @@ const result = await generateWithoutQuoting({
 
 **`texts` must cover every string field that reaches a reader.** A field left out is not
 checked, and that is the likeliest way a guard like this quietly stops working.
+
+## Testing
+
+```bash
+npm test
+```
+
+[`test/index.test.ts`](test/index.test.ts) holds 11 unit tests, run with Node's built-in test
+runner. They check that each function does what this README says:
+
+- `words()` strips markup, entities, digits and apostrophes, and folds accents.
+- `quotesPassage()` catches a six-word run whatever the verse-number format (`<sup>1</sup>`,
+  `[2]`, `3All`), lets short common phrases through, and honours a custom run length.
+- `strikePassage()` removes a passage read aloud from a transcript, including one with a misheard
+  word mid-reading.
+- `citedReferences()` resolves verse citations in prose (with aliases such as Psalm/Psalms),
+  ignores bare pointers such as "Read Psalms 23", and accepts a caller's own book list.
+- `hasLongQuotedSpan()` catches long double- and single-quoted spans without mistaking
+  apostrophes for quotation marks.
+- `generateWithoutQuoting()` retries with the rewrite note, and throws rather than return a quote.
+
+### What the tests don't cover
+
+The tests show the code does what it says. They don't yet show how well it keeps a model from
+writing Scripture:
+
+- **No real model output.** Every input is hand-written. Nothing measures how often models quote,
+  or how much of that the guard catches.
+- **No catch rate or false-positive rate.** The six-word default is a judgment call, not a
+  measured threshold.
+- **One passage, one translation.** Every test uses John 1:1–3 (KJV). Long or poetic passages, a
+  model quoting a different translation from the one you retrieved, and near-verbatim paraphrase
+  are untested.
+- **No CI.** Tests run on `npm test` and before publishing, not on every push.
+
+The next step is an effectiveness eval: a labeled set of quoting and non-quoting model outputs
+across several passages and translations, scored for each function.
 
 ## Limits
 
